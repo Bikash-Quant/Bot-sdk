@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import attachIcon from "./assets/icons/attachment.png";
 import sendIcon from "./assets/icons/send.png";
 import TypingText from "./TypingText";
 import carImage from "./assets/images/car.png";
+import { useStreamResponse } from "./hooks";
 
 // Default Configuration
 const defaultConfig = {
@@ -30,11 +31,17 @@ const defaultConfig = {
     botBubbleColor: "#e6e6e6",
     userBubbleColor: "#007bff",
   },
-  apiEndpoint: "https://your-api-endpoint.com/chat",
+  apiEndpoint: "https://app.eng.quant.ai/api/chat-messages",
   botName: "ChatBot",
 };
 
+const token =
+  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzNjI4Y2U5Yi0yODA5LTRhYTEtOTc5Ny02MzMyNWQzZGE1N2EiLCJzdWIiOiJXZWIgQVBJIFBhc3Nwb3J0IiwiYXBwX2lkIjoiMzYyOGNlOWItMjgwOS00YWExLTk3OTctNjMzMjVkM2RhNTdhIiwiYXBwX2NvZGUiOiIxaEtBZU1PVkJJNUY2NkZPIiwiZW5kX3VzZXJfaWQiOiI4YzBiNjdmOS1jYzIzLTRkNTctODllOC1kMjc0ZTRjYjZmZWIifQ.6YYdRRh4ivboXUVxyt_cM96-9WHZ43_duZudPcxC4jA";
+
 const FloatingChatbot = ({ config = {} }) => {
+  const { fullMessage, resetMessage, handleStreamResponse } =
+    useStreamResponse();
+
   // Merge default and provided configurations
   const mergedConfig = {
     ...defaultConfig,
@@ -68,66 +75,109 @@ const FloatingChatbot = ({ config = {} }) => {
     })
   ).current;
 
+  // const sendMessage = async () => {
+  //   if (!inputText.trim()) return;
+
+  //   // Add user message
+  //   const userMessage = { text: inputText, sender: "user" };
+  //   setMessages((prev) => [...prev, userMessage]);
+  //   setInputText("");
+  //   setIsLoading(true);
+
+  //   try {
+  //     // Simulate API call (replace with actual fetch)
+  //     const response = await fetch(mergedConfig.apiEndpoint, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: token,
+  //       },
+  //       body: JSON.stringify({
+  //         channel: "web",
+  //         conversation_id: "",
+  //         inputs: {},
+  //         query: inputText,
+  //         response_mode: "streaming",
+  //       }),
+  //     });
+
+  //     const data = await response.json();
+
+  //     // Remove typing indicator and add bot response
+  //     // setMessages((prev) =>
+  //     //   prev
+  //     //     .filter((msg) => !msg.typing)
+  //     //     .concat({ text: data.response, sender: "bot" })
+  //     // );
+  //   } catch (error) {
+  //     console.error("Chat API Error:", error);
+  //     // setMessages((prev) =>
+  //     //   prev
+  //     //     .filter((msg) => !msg.typing)
+  //     //     .concat({ text: "Sorry, something went wrong.", sender: "bot" })
+  //     // );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const sendMessage = async () => {
     if (!inputText.trim()) return;
-
-    // Add user message
-    const userMessage = { text: inputText, sender: "user" };
-    setMessages((prev) => [...prev, userMessage]);
-    setInputText("");
-
-    // Start loading and add typing indicator
-    setIsLoading(true);
-    setMessages((prev) => [
-      ...prev,
-      { text: "Thinking ...", sender: "bot", typing: true, type: "card" },
-    ]);
-
-    // setMessages((prev) => {
-    //   let lastEle = prev.slice(-1);
-    //   if (lastEle.text === "Thinking ..." && lastEle.sender === "bot") {
-    //     return [
-    //       ...prev,
-    //       {
-    //         text: "This is a generic response from the bot",
-    //         sender: "bot",
-    //         typing: true,
-    //         type: "card",
-    //       },
-    //     ];
-    //   }
-    //   return prev;
-    // });
-
     try {
-      // Simulate API call (replace with actual fetch)
       const response = await fetch(mergedConfig.apiEndpoint, {
         method: "POST",
         headers: {
+          Authorization: token,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: inputText }),
+        body: JSON.stringify({
+          channel: "web",
+          conversation_id: "",
+          inputs: {},
+          query: inputText,
+          response_mode: "streaming",
+        }),
       });
 
-      const data = await response.json();
+      // Assuming you're using EventSource or a similar streaming method
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
-      // Remove typing indicator and add bot response
-      // setMessages((prev) =>
-      //   prev
-      //     .filter((msg) => !msg.typing)
-      //     .concat({ text: data.response, sender: "bot" })
-      // );
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const decodedChunk = decoder.decode(value);
+        // Split the chunk into individual events
+        const events = decodedChunk.split("\n\n");
+
+        events.forEach((eventData) => {
+          if (eventData.startsWith("data: ")) {
+            handleStreamResponse({
+              data: eventData.replace("data: ", ""),
+            });
+          }
+        });
+      }
     } catch (error) {
-      console.error("Chat API Error:", error);
-      // setMessages((prev) =>
-      //   prev
-      //     .filter((msg) => !msg.typing)
-      //     .concat({ text: "Sorry, something went wrong.", sender: "bot" })
-      // );
-    } finally {
-      setIsLoading(false);
+      console.error("Streaming error:", error);
     }
   };
+
+  useEffect(() => {
+    if (fullMessage) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: fullMessage,
+          sender: "bot",
+          typing: true,
+          type: "text",
+        },
+      ]);
+      resetMessage();
+    }
+  }, [fullMessage]);
 
   const renderMessage = (message) => {
     const isBot = message.sender === "bot";
