@@ -22,7 +22,9 @@ import TypingText from "./TypingText";
 import carImage from "./assets/images/car.png";
 import { useStreamResponse } from "./hooks";
 
-// Default Configuration
+const token =
+  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzNjI4Y2U5Yi0yODA5LTRhYTEtOTc5Ny02MzMyNWQzZGE1N2EiLCJzdWIiOiJXZWIgQVBJIFBhc3Nwb3J0IiwiYXBwX2lkIjoiMzYyOGNlOWItMjgwOS00YWExLTk3OTctNjMzMjVkM2RhNTdhIiwiYXBwX2NvZGUiOiIxaEtBZU1PVkJJNUY2NkZPIiwiZW5kX3VzZXJfaWQiOiI4YzBiNjdmOS1jYzIzLTRkNTctODllOC1kMjc0ZTRjYjZmZWIifQ.6YYdRRh4ivboXUVxyt_cM96-9WHZ43_duZudPcxC4jA";
+
 const defaultConfig = {
   theme: {
     primaryColor: "#007bff",
@@ -32,11 +34,9 @@ const defaultConfig = {
     userBubbleColor: "#007bff",
   },
   apiEndpoint: "https://app.eng.quant.ai/api/chat-messages",
+  apiToken: token,
   botName: "ChatBot",
 };
-
-const token =
-  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzNjI4Y2U5Yi0yODA5LTRhYTEtOTc5Ny02MzMyNWQzZGE1N2EiLCJzdWIiOiJXZWIgQVBJIFBhc3Nwb3J0IiwiYXBwX2lkIjoiMzYyOGNlOWItMjgwOS00YWExLTk3OTctNjMzMjVkM2RhNTdhIiwiYXBwX2NvZGUiOiIxaEtBZU1PVkJJNUY2NkZPIiwiZW5kX3VzZXJfaWQiOiI4YzBiNjdmOS1jYzIzLTRkNTctODllOC1kMjc0ZTRjYjZmZWIifQ.6YYdRRh4ivboXUVxyt_cM96-9WHZ43_duZudPcxC4jA";
 
 const FloatingChatbot = ({ config = {} }) => {
   const { fullMessage, resetMessage, handleStreamResponse } =
@@ -127,7 +127,7 @@ const FloatingChatbot = ({ config = {} }) => {
       const response = await fetch(mergedConfig.apiEndpoint, {
         method: "POST",
         headers: {
-          Authorization: token,
+          Authorization: mergedConfig.apiToken,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
