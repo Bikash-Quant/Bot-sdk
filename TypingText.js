@@ -22,7 +22,7 @@ const TypingText = ({ msg, keyTyping = true }) => {
             return prevIndex; // Return the current index to avoid further updates
           }
         });
-      }, 100); // Adjust the speed by changing the interval time (in ms)
+      }, 1); // Adjust the speed by changing the interval time (in ms)
 
       // Cleanup the interval on component unmount or when typing stops
       return () => clearInterval(typingInterval);

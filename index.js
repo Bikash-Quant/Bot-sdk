@@ -76,7 +76,7 @@ const FloatingChatbot = ({ config = {} }) => {
   ).current;
 
   const sendMessage = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isStreaming) return;
 
     setMessages((prev) => [
       ...prev,
@@ -87,6 +87,8 @@ const FloatingChatbot = ({ config = {} }) => {
         type: "text",
       },
     ]);
+
+    setInputText("");
 
     fetchStreamingResponse({
       inputText,
@@ -236,6 +238,7 @@ const FloatingChatbot = ({ config = {} }) => {
     chatContainer: {
       flex: 1,
       padding: 10,
+      paddingBottom: 20,
       overflow: "auto",
       backgroundColor: "rgb(221, 240, 215)",
     },
