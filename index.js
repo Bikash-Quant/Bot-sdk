@@ -39,7 +39,7 @@ const defaultConfig = {
 };
 
 const FloatingChatbot = ({ config = {} }) => {
-  const { fullMessage, resetMessage, handleStreamResponse } =
+  const { fullMessage, fetchStreamingResponse, isStreaming } =
     useStreamResponse();
 
   // Merge default and provided configurations
@@ -75,93 +75,13 @@ const FloatingChatbot = ({ config = {} }) => {
     })
   ).current;
 
-  // const sendMessage = async () => {
-  //   if (!inputText.trim()) return;
-
-  //   // Add user message
-  //   const userMessage = { text: inputText, sender: "user" };
-  //   setMessages((prev) => [...prev, userMessage]);
-  //   setInputText("");
-  //   setIsLoading(true);
-
-  //   try {
-  //     // Simulate API call (replace with actual fetch)
-  //     const response = await fetch(mergedConfig.apiEndpoint, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: token,
-  //       },
-  //       body: JSON.stringify({
-  //         channel: "web",
-  //         conversation_id: "",
-  //         inputs: {},
-  //         query: inputText,
-  //         response_mode: "streaming",
-  //       }),
-  //     });
-
-  //     const data = await response.json();
-
-  //     // Remove typing indicator and add bot response
-  //     // setMessages((prev) =>
-  //     //   prev
-  //     //     .filter((msg) => !msg.typing)
-  //     //     .concat({ text: data.response, sender: "bot" })
-  //     // );
-  //   } catch (error) {
-  //     console.error("Chat API Error:", error);
-  //     // setMessages((prev) =>
-  //     //   prev
-  //     //     .filter((msg) => !msg.typing)
-  //     //     .concat({ text: "Sorry, something went wrong.", sender: "bot" })
-  //     // );
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const sendMessage = async () => {
     if (!inputText.trim()) return;
-    try {
-      const response = await fetch(mergedConfig.apiEndpoint, {
-        method: "POST",
-        headers: {
-          Authorization: mergedConfig.apiToken,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          channel: "web",
-          conversation_id: "",
-          inputs: {},
-          query: inputText,
-          response_mode: "streaming",
-        }),
-      });
-
-      // Assuming you're using EventSource or a similar streaming method
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const decodedChunk = decoder.decode(value);
-        // Split the chunk into individual events
-        const events = decodedChunk.split("\n\n");
-
-        events.forEach((eventData) => {
-          if (eventData.startsWith("data: ")) {
-            handleStreamResponse({
-              data: eventData.replace("data: ", ""),
-            });
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Streaming error:", error);
-    }
+    fetchStreamingResponse({
+      inputText,
+      apiToken: mergedConfig.apiToken,
+      apiEndpoint: mergedConfig.apiEndpoint,
+    });
   };
 
   useEffect(() => {
@@ -362,6 +282,35 @@ const FloatingChatbot = ({ config = {} }) => {
       padding: 8,
     },
   });
+
+  useEffect(() => {
+    if (isStreaming) {
+      setMessages((prev) =>
+        prev
+          .filter((msg) => !msg.typing)
+          .concat({
+            text: "Thinking ...",
+            sender: "bot",
+            typing: true,
+            type: "text",
+          })
+      );
+    } else {
+      if (fullMessage) {
+        setMessages((prev) =>
+          prev
+            .filter((msg) => !msg.typing)
+            .filter((msg) => msg.text !== "Thinking ...")
+            .concat({
+              text: fullMessage,
+              sender: "bot",
+              typing: true,
+              type: "text",
+            })
+        );
+      }
+    }
+  }, [fullMessage, isStreaming]);
 
   return (
     <>
