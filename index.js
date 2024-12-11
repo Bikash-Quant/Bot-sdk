@@ -39,7 +39,7 @@ const defaultConfig = {
 };
 
 const FloatingChatbot = ({ config = {} }) => {
-  const { fullMessage, fetchStreamingResponse, isStreaming } =
+  const { fullMessage, fetchStreamingResponse, isStreaming, resetMessage } =
     useStreamResponse();
 
   // Merge default and provided configurations
@@ -77,6 +77,17 @@ const FloatingChatbot = ({ config = {} }) => {
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: inputText,
+        sender: "user",
+        typing: false,
+        type: "text",
+      },
+    ]);
+
     fetchStreamingResponse({
       inputText,
       apiToken: mergedConfig.apiToken,
