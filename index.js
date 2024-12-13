@@ -339,6 +339,7 @@ const FloatingChatbot = ({ config = {} }) => {
       >
         <TouchableOpacity
           onPress={() => setIsOpen(true)}
+          onPressIn={() => setIsOpen(true)}
           style={{
             height: 54,
             width: 60,
