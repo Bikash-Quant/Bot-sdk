@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Text, StyleSheet } from "react-native";
 
-const TypingText = ({ msg, keyTyping = true }) => {
+const TypingText = ({ msg, keyTyping = true, onTyping = () => {} }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [typingIndex, setTypingIndex] = useState(0);
 
@@ -16,24 +16,30 @@ const TypingText = ({ msg, keyTyping = true }) => {
         setTypingIndex((prevIndex) => {
           if (prevIndex < msg.length) {
             setDisplayedText((prevText) => prevText + msg[prevIndex]);
-            return prevIndex + 1; // Increment the index
+            return prevIndex + 1;
           } else {
-            clearInterval(typingInterval); // Stop the interval when the message is fully typed
-            return prevIndex; // Return the current index to avoid further updates
+            clearInterval(typingInterval);
+            return prevIndex;
           }
         });
-      }, 1); // Adjust the speed by changing the interval time (in ms)
+      }, 50); // Adjust the speed by changing the interval time (in ms)
 
       // Cleanup the interval on component unmount or when typing stops
       return () => clearInterval(typingInterval);
     } else {
-      // If keyTyping is false, show the full message immediately
       setDisplayedText(msg);
     }
   }, [keyTyping, msg]);
 
+  useEffect(() => {
+    const txt = msg === displayedText ? "" : displayedText;
+    onTyping(txt);
+  }, [displayedText]);
+
   return (
-    <Text style={[styles.messageText, styles.botText]}>{displayedText}</Text>
+    <Text style={[styles.messageText, styles.botText]} className="w-auto">
+      {displayedText}
+    </Text>
   );
 };
 
