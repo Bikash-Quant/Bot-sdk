@@ -39,6 +39,7 @@ const defaultConfig = {
 };
 
 const FloatingChatbot = ({ config = {} }) => {
+  const scrollViewRef = useRef(null);
   const { fullMessage, fetchStreamingResponse, isStreaming, resetMessage } =
     useStreamResponse();
 
@@ -60,6 +61,7 @@ const FloatingChatbot = ({ config = {} }) => {
   ]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState("");
 
   // Draggable Icon Position
   const pan = useRef(new Animated.ValueXY()).current;
@@ -78,15 +80,17 @@ const FloatingChatbot = ({ config = {} }) => {
   const sendMessage = async () => {
     if (!inputText.trim() || isStreaming) return;
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        text: inputText,
-        sender: "user",
-        typing: false,
-        type: "text",
-      },
-    ]);
+    setMessages((prev) =>
+      [
+        ...prev,
+        {
+          text: inputText,
+          sender: "user",
+          typing: false,
+          type: "text",
+        },
+      ].map((x) => ({ ...x, typing: false }))
+    );
 
     setInputText("");
 
@@ -96,21 +100,6 @@ const FloatingChatbot = ({ config = {} }) => {
       apiEndpoint: mergedConfig.apiEndpoint,
     });
   };
-
-  useEffect(() => {
-    if (fullMessage) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          text: fullMessage,
-          sender: "bot",
-          typing: true,
-          type: "text",
-        },
-      ]);
-      resetMessage();
-    }
-  }, [fullMessage]);
 
   const renderMessage = (message) => {
     const isBot = message.sender === "bot";
@@ -165,6 +154,7 @@ const FloatingChatbot = ({ config = {} }) => {
         >
           <TypingText
             msg={message.text}
+            onTyping={(msg) => setIsTyping(msg)}
             // color={mergedConfig.theme.primaryColor}
           />
         </View>
@@ -239,7 +229,8 @@ const FloatingChatbot = ({ config = {} }) => {
       flex: 1,
       padding: 10,
       paddingBottom: 20,
-      overflow: "auto",
+      display: "flex",
+      flexDirection: "column",
       backgroundColor: "rgb(221, 240, 215)",
     },
     keyboardAvoidingView: {
@@ -301,7 +292,7 @@ const FloatingChatbot = ({ config = {} }) => {
     if (isStreaming) {
       setMessages((prev) =>
         prev
-          .filter((msg) => !msg.typing)
+          // .filter((msg) => !msg.typing)
           .concat({
             text: "Thinking ...",
             sender: "bot",
@@ -313,7 +304,7 @@ const FloatingChatbot = ({ config = {} }) => {
       if (fullMessage) {
         setMessages((prev) =>
           prev
-            .filter((msg) => !msg.typing)
+            // .filter((msg) => !msg.typing)
             .filter((msg) => msg.text !== "Thinking ...")
             .concat({
               text: fullMessage,
@@ -322,9 +313,26 @@ const FloatingChatbot = ({ config = {} }) => {
               type: "text",
             })
         );
+        resetMessage();
       }
     }
   }, [fullMessage, isStreaming]);
+
+  const scrollToBottom = () => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  };
+
+  useEffect(() => {
+    if (isTyping) {
+      scrollToBottom(); // Scroll to the bottom when streaming
+    }
+  }, [isTyping]);
+
+  if (messages.length) {
+    scrollToBottom();
+  }
 
   return (
     <>
@@ -360,7 +368,7 @@ const FloatingChatbot = ({ config = {} }) => {
         animationType="slide"
         onRequestClose={() => setIsOpen(false)}
       >
-        <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalContainer}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.keyboardAvoidingView}
@@ -392,40 +400,18 @@ const FloatingChatbot = ({ config = {} }) => {
               </TouchableOpacity>
             </View>
 
-            {/* <LinearGradient
-            colors={["rgb(255, 255, 255)", "rgb(221, 240, 215)"]} // Set gradient colors
-            start={{ x: 0, y: 0 }} // Starting point of gradient (top-left)
-            end={{ x: 0, y: 1 }} // Ending point of gradient (bottom-left)
-            locations={[0, 0.523]} // Set the percentage for color stops (52.3%)
-            style={styles.chatContainer}
-          > */}
-            <View style={{ flex: 1, overflow: "auto" }}>
-              <ScrollView
-                style={styles.chatContainer}
-                contentContainerStyle={{ flexGrow: 1 }}
-              >
-                {messages.map((msg, index) => (
-                  <React.Fragment key={index}>
-                    {renderMessage(msg)}
-                  </React.Fragment>
-                ))}
-              </ScrollView>
-            </View>
-            {/* </LinearGradient> */}
+            <ScrollView
+              ref={scrollViewRef}
+              style={styles.chatContainer}
+              contentContainerStyle={{ flexGrow: 1 }}
+            >
+              {messages.map((msg, index) => (
+                <React.Fragment key={index}>
+                  {renderMessage(msg)}
+                </React.Fragment>
+              ))}
+            </ScrollView>
 
-            {/* <View style={styles.inputContainer}>
-              <TextInput
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Type a message..."
-                style={styles.input}
-              />
-              <TouchableOpacity onPress={sendMessage} disabled={isLoading}>
-                <Text style={{ color: mergedConfig.theme.primaryColor }}>
-                  Send
-                </Text>
-              </TouchableOpacity>
-            </View> */}
             <View
               style={[{ backgroundColor: "rgb(221, 240, 215)", padding: 8 }]}
             >
@@ -468,7 +454,7 @@ const FloatingChatbot = ({ config = {} }) => {
               </View>
             </View>
           </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
       </Modal>
     </>
   );
