@@ -18,13 +18,9 @@ import Avatar from "./Avatar";
 import closeIcon from "./assets/icons/close.png";
 import attachIcon from "./assets/icons/attachment.png";
 import sendIcon from "./assets/icons/send.png";
-import TypingText from "./TypingText";
-import carImage from "./assets/images/car.png";
 import sendActiveIcon from "./assets/icons/sendActive.png";
 import { useStreamResponse } from "./hooks";
-
-const token =
-  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzNjI4Y2U5Yi0yODA5LTRhYTEtOTc5Ny02MzMyNWQzZGE1N2EiLCJzdWIiOiJXZWIgQVBJIFBhc3Nwb3J0IiwiYXBwX2lkIjoiMzYyOGNlOWItMjgwOS00YWExLTk3OTctNjMzMjVkM2RhNTdhIiwiYXBwX2NvZGUiOiIxaEtBZU1PVkJJNUY2NkZPIiwiZW5kX3VzZXJfaWQiOiI4YzBiNjdmOS1jYzIzLTRkNTctODllOC1kMjc0ZTRjYjZmZWIifQ.6YYdRRh4ivboXUVxyt_cM96-9WHZ43_duZudPcxC4jA";
+import { RenderMessage } from "./RenderMessage";
 
 const defaultConfig = {
   theme: {
@@ -35,7 +31,7 @@ const defaultConfig = {
     userBubbleColor: "#007bff",
   },
   apiEndpoint: "https://app.eng.quant.ai/api/chat-messages",
-  apiToken: token,
+  apiToken: "",
   botName: "ChatBot",
 };
 
@@ -61,7 +57,6 @@ const FloatingChatbot = ({ config = {} }) => {
     },
   ]);
   const [inputText, setInputText] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState("");
 
   // Draggable Icon Position
@@ -102,88 +97,8 @@ const FloatingChatbot = ({ config = {} }) => {
     });
   };
 
-  const renderMessage = (message) => {
-    const isBot = message.sender === "bot";
-
-    if (message.type === "card") {
-      return (
-        <View
-          style={{
-            marginVertical: 10,
-            marginHorizontal: 5,
-            borderRadius: 10,
-            backgroundColor: "white",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-            maxWidth: "80%",
-          }}
-        >
-          <Image
-            source={carImage}
-            style={{ width: "100%", height: 150, borderRadius: 10 }}
-          />
-          <View style={{ padding: 10 }}>
-            <Text style={{ fontSize: 18, fontWeight: "bold", color: "black" }}>
-              Car booking card
-            </Text>
-            <Text style={{ fontSize: 16, color: "black" }}>Skoda slavia </Text>
-            <Text style={{ fontSize: 14, color: "gray" }}>
-              Lorem Ipsum is simply dummy text of the printing and typesetting
-              industry. Lorem Ipsum has been the industry's standard dummy text
-              ever since the 1500s, when
-            </Text>
-          </View>
-        </View>
-      );
-    }
-
-    if (message.typing) {
-      return (
-        <View
-          style={[
-            styles.messageBubble,
-            isBot ? styles.botBubble : styles.userBubble,
-            {
-              backgroundColor: isBot
-                ? mergedConfig.theme.botBubbleColor
-                : mergedConfig.theme.userBubbleColor,
-            },
-          ]}
-        >
-          <TypingText
-            msg={message.text}
-            onTyping={(msg) => setIsTyping(msg)}
-            // color={mergedConfig.theme.primaryColor}
-          />
-        </View>
-      );
-    }
-
-    return (
-      <View
-        style={[
-          styles.messageBubble,
-          isBot ? styles.botBubble : styles.userBubble,
-          {
-            backgroundColor: isBot
-              ? mergedConfig.theme.botBubbleColor
-              : mergedConfig.theme.userBubbleColor,
-          },
-        ]}
-      >
-        <Text
-          style={[styles.messageText, { color: mergedConfig.theme.textColor }]}
-        >
-          {message.text}
-        </Text>
-      </View>
-    );
-  };
-
   const isSendButtonActive = !isStreaming && inputText.trim();
+
   const styles = StyleSheet.create({
     floatingIcon: {
       position: "absolute",
@@ -266,21 +181,6 @@ const FloatingChatbot = ({ config = {} }) => {
       display: "flex",
       flex: 1,
       justifyContent: "start",
-    },
-    messageBubble: {
-      maxWidth: "80%",
-      padding: 10,
-      borderRadius: 10,
-      marginVertical: 5,
-    },
-    botBubble: {
-      alignSelf: "flex-start",
-    },
-    userBubble: {
-      alignSelf: "flex-end",
-    },
-    messageText: {
-      fontSize: 16,
     },
     inputButton: {
       padding: 8,
@@ -411,7 +311,11 @@ const FloatingChatbot = ({ config = {} }) => {
             >
               {messages.map((msg, index) => (
                 <React.Fragment key={index}>
-                  {renderMessage(msg)}
+                  <RenderMessage
+                    message={msg}
+                    onTyping={(msg) => setIsTyping(msg)}
+                    mergedConfig={mergedConfig}
+                  />
                 </React.Fragment>
               ))}
             </ScrollView>
