@@ -1,6 +1,6 @@
 {
   "name": "react-native-quant-chat-sdk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "This is testing chatbot sdk",
   "main": "index.js",
   "scripts": {
